@@ -36,7 +36,5 @@ class MainActivity : ComponentActivity(), MainActivityActions {
 
     override fun onSearchValueChange(content: String) = viewModel.onSearchValueChange(content)
 
-    override fun onSearchTriggered() {
-        Toast.makeText(applicationContext, "Search", Toast.LENGTH_SHORT).show()
-    }
+    override fun onSearchTriggered() = viewModel.onSearchTriggered()
 }
