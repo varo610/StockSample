@@ -12,11 +12,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -134,6 +137,7 @@ fun SearchView(
     modifier: Modifier = Modifier
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
     TextField(
         value = searchValue,
         onValueChange = onSearchValueChange,
@@ -158,14 +162,23 @@ fun SearchView(
             }
         ),
         modifier = modifier
+            .focusRequester(focusRequester)
     )
+    DisposableEffect(Unit) {
+        focusRequester.requestFocus()
+        onDispose { }
+    }
 }
 
 @ExperimentalComposeUiApi
 @Preview(showBackground = true)
 @Composable
 fun SearchViewPreview() {
-    SearchView(searchValue = "Aaaaa", onSearchValueChange = { }, onSearchTriggered = {})
+    SearchView(
+        searchValue = "Aaaaa",
+        onSearchValueChange = { },
+        onSearchTriggered = {},
+    )
 }
 
 @ExperimentalComposeUiApi
