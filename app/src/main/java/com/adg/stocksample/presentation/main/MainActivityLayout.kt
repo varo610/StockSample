@@ -1,6 +1,5 @@
 package com.adg.stocksample.presentation.main
 
-import android.graphics.drawable.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,18 +18,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.adg.stocksample.data.SearchEntryResponse
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
+import com.adg.stocksample.utils.Request
 
 interface MainActivityActions {
     fun openSearch()
@@ -62,11 +61,37 @@ fun MainScreen(state: MainState, mainActivityActions: MainActivityActions) {
             onSearchTriggered = { mainActivityActions.onSearchTriggered() }
         )
     }) {
-        LazyColumn(content = { 
-            items(state.searchResults){
-                Text(text = it.name)
+        when (state.searchResults) {
+            is Request.Error -> {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = state.searchResults.throwable.message ?: "Error",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
-        })
+            Request.Loading -> {
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Text(
+                        text = "LOADING",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            is Request.Success -> {
+                LazyColumn { items(state.searchResults.result) {
+                    StockCell(searchEntryResponse = it) }
+                }
+            }
+        }
     }
 }
 
@@ -88,8 +113,8 @@ fun MainTopBar(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     modifier = Modifier
-                        .padding(16.dp)
                         .clickable(onClick = hideSearch)
+                        .padding(16.dp)
                 )
             } else {
                 Icon(
@@ -119,8 +144,8 @@ fun MainTopBar(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search",
                         modifier = Modifier
-                            .padding(16.dp)
                             .clickable(onClick = openSearch)
+                            .padding(16.dp)
                     )
                 }
             }
@@ -176,15 +201,38 @@ fun SearchView(
     }
 }
 
-@ExperimentalComposeUiApi
-@Preview(showBackground = true)
 @Composable
-fun SearchViewPreview() {
-    SearchView(
-        searchValue = "Aaaaa",
-        onSearchValueChange = { },
-        onSearchTriggered = {},
-    )
+fun StockCell(
+    searchEntryResponse: SearchEntryResponse,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
+) {
+    Column(modifier = modifier
+        .background(MaterialTheme.colors.background)
+        .fillMaxWidth()
+        .clickable { }
+    ) {
+        Column(
+            Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = searchEntryResponse.symbol,
+                fontSize = MaterialTheme.typography.body1.fontSize
+            )
+            Text(
+                text = searchEntryResponse.name,
+                fontSize = MaterialTheme.typography.caption.fontSize
+            )
+        }
+        if (showDivider) {
+            Surface(
+                color = MaterialTheme.colors.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+            ) {}
+        }
+    }
 }
 
 @ExperimentalComposeUiApi
@@ -201,4 +249,22 @@ fun DefaultPreview() {
             onSearchTriggered = {},
         )
     }
+}
+
+@Preview
+@Composable
+fun CellPreview() {
+    StockCell(
+        searchEntryResponse = SearchEntryResponse(
+            symbol = "AAPL",
+            name = "Apple Inc",
+            type = "",
+            region = "",
+            marketOpen = "",
+            marketClose = "",
+            timezone = "",
+            currency = "",
+            matchScore = "",
+        )
+    )
 }
