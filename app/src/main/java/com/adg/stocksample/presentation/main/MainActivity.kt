@@ -1,6 +1,7 @@
 package com.adg.stocksample.presentation.main
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -27,7 +28,13 @@ class MainActivity : ComponentActivity(), MainActivityActions {
         }
     }
 
-    override fun onSearchClick() = viewModel.onSearchButtonClick()
+    override fun openSearch() = viewModel.updateSearch(true)
+
+    override fun hideSearch() = viewModel.updateSearch(false)
 
     override fun onSearchValueChange(content: String) = viewModel.onSearchValueChange(content)
+
+    override fun onSearchTriggered() {
+        Toast.makeText(applicationContext, "Search", Toast.LENGTH_SHORT).show()
+    }
 }

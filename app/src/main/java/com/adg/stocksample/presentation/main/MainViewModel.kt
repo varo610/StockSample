@@ -11,8 +11,8 @@ class MainViewModel @Inject constructor() : ViewModel() {
     private val _state: MutableLiveData<MainState> = MutableLiveData(MainState())
     val state: LiveData<MainState> = _state
 
-    fun onSearchButtonClick() {
-        _state.value = with(state.value!!) { copy(searchOpen = !searchOpen) }
+    fun updateSearch(open: Boolean) {
+        _state.value = with(state.value!!) { copy(searchOpen = open) }
     }
 
     fun onSearchValueChange(content: String) {
