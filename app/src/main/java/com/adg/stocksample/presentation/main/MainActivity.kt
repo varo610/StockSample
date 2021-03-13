@@ -4,24 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), MainActivityActions {
 
     private val viewModel: MainViewModel by viewModels()
 
@@ -29,33 +18,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             StockSampleTheme {
-                MainActivityLayout()
+                val state by viewModel.state.observeAsState()
+                MainActivityLayout(
+                    state = state,
+                    mainActivityActions = this
+                )
             }
         }
     }
-}
 
-@Composable
-fun MainActivityLayout() {
-    Scaffold(topBar = { MainTopBar() }) {
+    override fun onSearchClick() = viewModel.onSearchButtonClick()
 
-    }
-}
-
-
-@Composable
-fun MainTopBar() = TopAppBar(title = {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.TrendingUp, "Trending up")
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(text = "StockSample")
-    }
-})
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    StockSampleTheme {
-        MainActivityLayout()
-    }
+    override fun onSearchValueChange(content: String) = viewModel.onSearchValueChange(content)
 }
