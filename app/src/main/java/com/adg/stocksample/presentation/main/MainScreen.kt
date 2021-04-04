@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -31,34 +33,34 @@ import com.adg.stocksample.data.SearchEntryResponse
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import com.adg.stocksample.utils.Request
 
-interface MainActivityActions {
+interface MainScreenActions {
     fun openSearch()
     fun hideSearch()
     fun onSearchValueChange(content: String)
     fun onSearchTriggered()
+    fun onCellClicked(symbol: String)
 }
 
-@ExperimentalComposeUiApi
 @Composable
-fun MainActivityLayout(state: MainState?, mainActivityActions: MainActivityActions) {
+fun MainScreen(viewModel: MainViewModel) {
+    val state by viewModel.state.observeAsState()
     if (state == null) {
         //TODO Error screen
     } else {
-        MainScreen(state = state, mainActivityActions = mainActivityActions)
+        MainStateScreen(state = state!!, mainScreenActions = viewModel)
     }
 }
 
-@ExperimentalComposeUiApi
 @Composable
-fun MainScreen(state: MainState, mainActivityActions: MainActivityActions) {
+fun MainStateScreen(state: MainState, mainScreenActions: MainScreenActions) {
     Scaffold(topBar = {
         MainTopBar(
             searchOpened = state.searchOpen,
             searchValue = state.searchValue,
-            openSearch = { mainActivityActions.openSearch() },
-            hideSearch = { mainActivityActions.hideSearch() },
-            onSearchValueChange = { value -> mainActivityActions.onSearchValueChange(value) },
-            onSearchTriggered = { mainActivityActions.onSearchTriggered() }
+            openSearch = { mainScreenActions.openSearch() },
+            hideSearch = { mainScreenActions.hideSearch() },
+            onSearchValueChange = { value -> mainScreenActions.onSearchValueChange(value) },
+            onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
         when (state.searchResults) {
@@ -87,8 +89,13 @@ fun MainScreen(state: MainState, mainActivityActions: MainActivityActions) {
                 }
             }
             is Request.Success -> {
-                LazyColumn { items(state.searchResults.result) {
-                    StockCell(searchEntryResponse = it) }
+                LazyColumn {
+                    items(state.searchResults.result) {
+                        StockCell(
+                            searchEntryResponse = it,
+                            onClick = { symbol -> mainScreenActions.onCellClicked(symbol) }
+                        )
+                    }
                 }
             }
         }
@@ -96,7 +103,6 @@ fun MainScreen(state: MainState, mainActivityActions: MainActivityActions) {
 }
 
 
-@ExperimentalComposeUiApi
 @Composable
 fun MainTopBar(
     searchOpened: Boolean,
@@ -159,7 +165,7 @@ fun MainTopBar(
     )
 }
 
-@ExperimentalComposeUiApi
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SearchView(
     searchValue: String,
@@ -204,24 +210,25 @@ fun SearchView(
 @Composable
 fun StockCell(
     searchEntryResponse: SearchEntryResponse,
+    onClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
 ) {
     Column(modifier = modifier
         .background(MaterialTheme.colors.background)
         .fillMaxWidth()
-        .clickable { }
+        .clickable { onClick(searchEntryResponse.symbol) }
     ) {
         Column(
             Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
                 text = searchEntryResponse.symbol,
-                fontSize = MaterialTheme.typography.body1.fontSize
+                style = MaterialTheme.typography.body1
             )
             Text(
                 text = searchEntryResponse.name,
-                fontSize = MaterialTheme.typography.caption.fontSize
+                style = MaterialTheme.typography.caption
             )
         }
         if (showDivider) {
@@ -265,6 +272,7 @@ fun CellPreview() {
             timezone = "",
             currency = "",
             matchScore = "",
-        )
+        ),
+        onClick = {}
     )
 }

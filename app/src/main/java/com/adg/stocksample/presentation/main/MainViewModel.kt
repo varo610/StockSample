@@ -8,6 +8,7 @@ import com.adg.stocksample.data.SearchEntryResponse
 import com.adg.stocksample.data.StockDataSource
 import com.adg.stocksample.utils.Either
 import com.adg.stocksample.utils.Request
+import com.adg.stocksample.utils.SingleLiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,19 +16,25 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val stockDataSource: StockDataSource
-) : ViewModel() {
+) : ViewModel(), MainScreenActions {
     private val _state: MutableLiveData<MainState> = MutableLiveData(MainState())
     val state: LiveData<MainState> = _state
 
-    fun updateSearch(open: Boolean) {
+    val navigateToDetail = SingleLiveEvent<String>()
+
+    override fun openSearch() = updateSearch(true)
+
+    override fun hideSearch() = updateSearch(false)
+
+    private fun updateSearch(open: Boolean) {
         _state.value = with(state.value!!) { copy(searchOpen = open) }
     }
 
-    fun onSearchValueChange(content: String) {
+    override fun onSearchValueChange(content: String) {
         _state.value = with(state.value!!) { copy(searchValue = content) }
     }
 
-    fun onSearchTriggered() {
+    override fun onSearchTriggered() {
         _state.value = with(state.value!!) { copy(searchResults = Request.Loading) }
         viewModelScope.launch {
             val search = stockDataSource.search(state.value!!.searchValue)
@@ -48,6 +55,10 @@ class MainViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    override fun onCellClicked(symbol: String) {
+        navigateToDetail.value = symbol
     }
 }
 
