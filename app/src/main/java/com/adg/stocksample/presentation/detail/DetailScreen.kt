@@ -3,6 +3,8 @@ package com.adg.stocksample.presentation.detail
 import androidx.activity.viewModels
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -14,8 +16,11 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.adg.stocksample.presentation.main.MainViewModel
-import com.adg.stocksample.presentation.main.SearchView
+import com.adg.stocksample.data.models.SymbolMonthlyInfoResponse
+import com.adg.stocksample.presentation.main.*
+import com.adg.stocksample.presentation.ui.StockSampleError
+import com.adg.stocksample.presentation.ui.StockSampleLoading
+import com.adg.stocksample.utils.Request
 
 interface DetailScreenActions {
 }
@@ -29,7 +34,12 @@ fun DetailScreen(viewModel: DetailViewModel) {
 @Composable
 fun DetailStateScreen(state: DetailState, detailScreenActions: DetailScreenActions) {
     Scaffold(topBar = { DetailTopBar(symbol = state.symbol) }) {
-        Text(text = "Detail")
+        when (val results = state.results) {
+            Request.Uninitialized,
+            Request.Loading -> StockSampleLoading()
+            is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
+            is Request.Success -> DetailScreenSuccess(results.result)
+        }
     }
 }
 
@@ -49,3 +59,13 @@ fun DetailTopBar(symbol: String) {
         elevation = 8.dp,
     )
 }
+
+@Composable
+fun DetailScreenSuccess(
+    info: SymbolMonthlyInfoResponse
+) = LazyColumn {
+    items(info.info.entries.toList()){
+        Text(text = "${it.key} - ${it.value.close}")
+    }
+}
+

@@ -1,17 +1,39 @@
 package com.adg.stocksample.presentation.detail
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
+import com.adg.stocksample.data.StockDataSource
+import com.adg.stocksample.data.models.SymbolMonthlyInfoResponse
+import com.adg.stocksample.utils.Request
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.launch
 
 class DetailViewModel @AssistedInject constructor(
-    @Assisted private val symbol: String
+    @Assisted private val symbol: String,
+    private val stockDataSource: StockDataSource
 ) : ViewModel(), DetailScreenActions {
     private val _state: MutableLiveData<DetailState> = MutableLiveData(DetailState(symbol))
     val state: LiveData<DetailState> = _state
+
+    init {
+        viewModelScope.launch {
+            val search = stockDataSource.getMonthly(state.value!!.symbol)
+            search.fold(
+                {
+                    _state.postValue(
+                        with(state.value!!) { copy(results = Request.Error(it)) }
+                    )
+                },
+                {
+                    _state.postValue(
+                        with(state.value!!) {
+                            copy(results = Request.Success(it))
+                        }
+                    )
+                }
+            )
+        }
+    }
 
     @dagger.assisted.AssistedFactory
     interface AssistedFactory {
@@ -32,4 +54,7 @@ class DetailViewModel @AssistedInject constructor(
 
 }
 
-data class DetailState(val symbol: String)
+data class DetailState(
+    val symbol: String,
+    val results: Request<SymbolMonthlyInfoResponse> = Request.Uninitialized
+)

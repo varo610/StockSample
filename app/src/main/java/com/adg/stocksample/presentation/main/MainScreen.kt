@@ -30,6 +30,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.adg.stocksample.data.SearchEntryResponse
+import com.adg.stocksample.presentation.ui.StockSampleError
+import com.adg.stocksample.presentation.ui.StockSampleLoading
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import com.adg.stocksample.utils.Request
 
@@ -65,9 +67,9 @@ fun MainStateScreen(state: MainState, mainScreenActions: MainScreenActions) {
     }) {
         when (val results = state.searchResults) {
             Request.Uninitialized -> MainScreenEmpty()
-            is Request.Error -> MainScreenError(errorText = results.throwable.message ?: "Error")
-            Request.Loading -> MainScreenLoading()
-            is Request.Success -> MainScreenSuccess(results, mainScreenActions)
+            is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
+            Request.Loading -> StockSampleLoading()
+            is Request.Success -> MainScreenSuccess(results.result, mainScreenActions)
         }
     }
 }
@@ -225,35 +227,11 @@ fun MainScreenEmpty() = Column(
 }
 
 @Composable
-fun MainScreenError(errorText: String) = Column(
-    verticalArrangement = Arrangement.Center,
-    modifier = Modifier.fillMaxSize()
-) {
-    Text(
-        text = errorText,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth()
-    )
-}
-
-@Composable
-fun MainScreenLoading() = Column(
-    verticalArrangement = Arrangement.Center,
-    horizontalAlignment = Alignment.CenterHorizontally,
-    modifier = Modifier.fillMaxSize(),
-) {
-    CircularProgressIndicator(
-        color = MaterialTheme.colors.primary,
-        modifier = Modifier.size(100.dp)
-    )
-}
-
-@Composable
 fun MainScreenSuccess(
-    results: Request.Success<List<SearchEntryResponse>>,
+    results: List<SearchEntryResponse>,
     mainScreenActions: MainScreenActions
 ) = LazyColumn {
-    items(results.result) {
+    items(results) {
         StockCell(
             searchEntryResponse = it,
             onClick = { symbol -> mainScreenActions.onCellClicked(symbol) }
