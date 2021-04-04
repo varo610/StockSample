@@ -63,41 +63,11 @@ fun MainStateScreen(state: MainState, mainScreenActions: MainScreenActions) {
             onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
-        when (state.searchResults) {
-            is Request.Error -> {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = state.searchResults.throwable.message ?: "Error",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-            Request.Loading -> {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Text(
-                        text = "LOADING",
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-            is Request.Success -> {
-                LazyColumn {
-                    items(state.searchResults.result) {
-                        StockCell(
-                            searchEntryResponse = it,
-                            onClick = { symbol -> mainScreenActions.onCellClicked(symbol) }
-                        )
-                    }
-                }
-            }
+        when (val results = state.searchResults) {
+            Request.Uninitialized -> MainScreenEmpty()
+            is Request.Error -> MainScreenError(errorText = results.throwable.message ?: "Error")
+            Request.Loading -> MainScreenLoading()
+            is Request.Success -> MainScreenSuccess(results, mainScreenActions)
         }
     }
 }
@@ -241,6 +211,56 @@ fun StockCell(
         }
     }
 }
+
+@Composable
+fun MainScreenEmpty() = Column(
+    verticalArrangement = Arrangement.Center,
+    modifier = Modifier.fillMaxSize()
+) {
+    Text(
+        text = "Search in order to see results",
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+fun MainScreenError(errorText: String) = Column(
+    verticalArrangement = Arrangement.Center,
+    modifier = Modifier.fillMaxSize()
+) {
+    Text(
+        text = errorText,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+fun MainScreenLoading() = Column(
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier.fillMaxSize(),
+) {
+    CircularProgressIndicator(
+        color = MaterialTheme.colors.primary,
+        modifier = Modifier.size(100.dp)
+    )
+}
+
+@Composable
+fun MainScreenSuccess(
+    results: Request.Success<List<SearchEntryResponse>>,
+    mainScreenActions: MainScreenActions
+) = LazyColumn {
+    items(results.result) {
+        StockCell(
+            searchEntryResponse = it,
+            onClick = { symbol -> mainScreenActions.onCellClicked(symbol) }
+        )
+    }
+}
+
 
 @ExperimentalComposeUiApi
 @Preview(showBackground = true)

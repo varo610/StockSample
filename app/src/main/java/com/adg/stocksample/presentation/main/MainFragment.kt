@@ -25,6 +25,10 @@ class MainFragment : Fragment() {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
+        if(savedInstanceState != null) {
+            viewModel.onSearchValueChange(savedInstanceState.getString(SEARCH_VALUE)?:"")
+            viewModel.onSearchTriggered()
+        }
         setContent {
             StockSampleTheme {
                 MainScreen(viewModel = viewModel)
@@ -35,5 +39,16 @@ class MainFragment : Fragment() {
                 MainFragmentDirections.actionMainFragmentToDetailFragment(symbol)
             )
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        viewModel.state.value?.let {
+            outState.putString(SEARCH_VALUE,it.searchValue)
+        }
+        super.onSaveInstanceState(outState)
+    }
+
+    private companion object {
+        const val SEARCH_VALUE = "SEARCH_VALUE"
     }
 }
