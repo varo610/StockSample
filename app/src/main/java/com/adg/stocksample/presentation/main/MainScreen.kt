@@ -12,11 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -45,12 +41,8 @@ interface MainScreenActions {
 
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
-    val state by viewModel.state.observeAsState()
-    if (state == null) {
-        //TODO Error screen
-    } else {
-        MainStateScreen(state = state!!, mainScreenActions = viewModel)
-    }
+    val state by viewModel.state.collectAsState()
+    MainStateScreen(state = state, mainScreenActions = viewModel)
 }
 
 @Composable

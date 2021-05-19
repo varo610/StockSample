@@ -12,7 +12,7 @@ sealed class Either<out L, out R> {
 
     fun <R> right(b: R) = Either.Right(b)
 
-    fun fold(fnL: (L) -> Any, fnR: (R) -> Any): Any =
+    fun fold(fnL: (L) -> Unit, fnR: (R) -> Unit): Any =
         when (this) {
             is Left -> fnL(a)
             is Right -> fnR(b)
