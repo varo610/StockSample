@@ -7,9 +7,15 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.flowWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
+import com.adg.stocksample.utils.Request
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
@@ -25,8 +31,8 @@ class MainFragment : Fragment() {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
-        if(savedInstanceState != null) {
-            viewModel.onSearchValueChange(savedInstanceState.getString(SEARCH_VALUE)?:"")
+        if (savedInstanceState != null && viewModel.state.value.searchResults is Request.Uninitialized) {
+            viewModel.onSearchValueChange(savedInstanceState.getString(SEARCH_VALUE) ?: "")
             viewModel.onSearchTriggered()
         }
         setContent {
@@ -34,16 +40,26 @@ class MainFragment : Fragment() {
                 MainScreen(viewModel = viewModel)
             }
         }
-        viewModel.navigateToDetail.observe(requireActivity()){ symbol ->
-            findNavController().navigate(
-                MainFragmentDirections.actionMainFragmentToDetailFragment(symbol)
-            )
-        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel.sideEffects
+            .flowWithLifecycle(lifecycle, Lifecycle.State.STARTED)
+            .onEach { sideEffect ->
+                when (sideEffect) {
+                    is MainSideEffects.NavigateToDetail -> findNavController().navigate(
+                        MainFragmentDirections.actionMainFragmentToDetailFragment(sideEffect.symbol)
+                    )
+                }
+            }
+            .launchIn(lifecycleScope)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        viewModel.state.value?.let {
-            outState.putString(SEARCH_VALUE,it.searchValue)
+        viewModel.state.value.let {
+            outState.putString(SEARCH_VALUE, it.searchValue)
         }
         super.onSaveInstanceState(outState)
     }

@@ -5,10 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.adg.stocksample.data.SearchEntryResponse
 import com.adg.stocksample.data.StockDataSource
 import com.adg.stocksample.utils.Request
-import com.adg.stocksample.utils.SingleLiveEvent
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -19,7 +20,8 @@ class MainViewModel @Inject constructor(
     private val _state: MutableStateFlow<MainState> = MutableStateFlow(MainState())
     val state: StateFlow<MainState> = _state
 
-    val navigateToDetail = SingleLiveEvent<String>()
+    private val sideEffectsChannel = Channel<MainSideEffects>(Channel.BUFFERED)
+    val sideEffects = sideEffectsChannel.receiveAsFlow()
 
     override fun openSearch() = updateSearch(true)
 
@@ -56,7 +58,9 @@ class MainViewModel @Inject constructor(
 
 
     override fun onCellClicked(symbol: String) {
-        navigateToDetail.value = symbol
+        viewModelScope.launch {
+            sideEffectsChannel.send(MainSideEffects.NavigateToDetail(symbol))
+        }
     }
 }
 
@@ -67,4 +71,8 @@ data class MainState(
 ) {
     val searchNotEmpty: Boolean
         get() = searchValue.isNullOrEmpty().not()
+}
+
+sealed class MainSideEffects{
+    data class NavigateToDetail(val symbol: String): MainSideEffects()
 }
