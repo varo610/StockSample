@@ -30,6 +30,8 @@ import com.adg.stocksample.presentation.ui.StockSampleError
 import com.adg.stocksample.presentation.ui.StockSampleLoading
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import com.adg.stocksample.utils.Request
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 
 interface MainScreenActions {
     fun openSearch()
@@ -41,28 +43,24 @@ interface MainScreenActions {
 
 @Composable
 fun MainScreen(viewModel: MainViewModel) {
-    val state by viewModel.state.collectAsState()
-    MainStateScreen(state = state, mainScreenActions = viewModel)
+    MainStateScreen(state = viewModel.state, mainScreenActions = viewModel)
 }
 
 @Composable
-fun MainStateScreen(state: MainState, mainScreenActions: MainScreenActions) {
+fun MainStateScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenActions) {
+    val searchOpen by state.map { it.searchOpen }.collectAsState(state.value.searchOpen)
+    val searchValue by state.map { it.searchValue }.collectAsState(state.value.searchValue)
     Scaffold(topBar = {
         MainTopBar(
-            searchOpened = state.searchOpen,
-            searchValue = state.searchValue,
+            searchOpened = searchOpen,
+            searchValue = searchValue,
             openSearch = { mainScreenActions.openSearch() },
             hideSearch = { mainScreenActions.hideSearch() },
             onSearchValueChange = { value -> mainScreenActions.onSearchValueChange(value) },
             onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
-        when (val results = state.searchResults) {
-            Request.Uninitialized -> MainScreenEmpty()
-            is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
-            Request.Loading -> StockSampleLoading()
-            is Request.Success -> MainScreenSuccess(results.result, mainScreenActions)
-        }
+        MainContent(state){ symbol -> mainScreenActions.onCellClicked(symbol) }
     }
 }
 
@@ -172,6 +170,17 @@ fun SearchView(
 }
 
 @Composable
+fun MainContent(state: StateFlow<MainState>, onCellClicked: (String) -> Unit) {
+    val searchResults by state.map { it.searchResults }.collectAsState(state.value.searchResults)
+    when (val results = searchResults) {
+        Request.Uninitialized -> MainScreenEmpty()
+        is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
+        Request.Loading -> StockSampleLoading()
+        is Request.Success -> MainScreenSuccess(results.result, onCellClicked)
+    }
+}
+
+@Composable
 fun StockCell(
     searchEntryResponse: SearchEntryResponse,
     onClick: (String) -> Unit,
@@ -221,12 +230,12 @@ fun MainScreenEmpty() = Column(
 @Composable
 fun MainScreenSuccess(
     results: List<SearchEntryResponse>,
-    mainScreenActions: MainScreenActions
+    onCellClicked: (String) -> Unit
 ) = LazyColumn {
     items(results) {
         StockCell(
             searchEntryResponse = it,
-            onClick = { symbol -> mainScreenActions.onCellClicked(symbol) }
+            onClick = { symbol -> onCellClicked(symbol) }
         )
     }
 }
