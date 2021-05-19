@@ -1,5 +1,7 @@
 package com.adg.stocksample.presentation.main
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,10 +18,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.animatedVectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -32,6 +36,7 @@ import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import com.adg.stocksample.utils.Request
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlin.math.abs
 
 interface MainScreenActions {
     fun openSearch()
@@ -60,11 +65,12 @@ fun MainStateScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenAc
             onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
-        MainContent(state){ symbol -> mainScreenActions.onCellClicked(symbol) }
+        MainContent(state) { symbol -> mainScreenActions.onCellClicked(symbol) }
     }
 }
 
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun MainTopBar(
     searchOpened: Boolean,
@@ -74,6 +80,17 @@ fun MainTopBar(
     onSearchValueChange: (String) -> Unit,
     onSearchTriggered: () -> Unit,
 ) {
+    val animationDuration = 500
+    val offset by animateDpAsState(
+        targetValue = if (searchOpened) 0.dp else 500.dp,
+        animationSpec = tween(durationMillis = animationDuration)
+    )
+
+    val alpha by animateFloatAsState(
+        targetValue = if (searchOpened) 0f else 1f,
+        animationSpec = tween(durationMillis = animationDuration)
+    )
+
     TopAppBar(
         navigationIcon = {
             if (searchOpened) {
@@ -88,24 +105,28 @@ fun MainTopBar(
                 Icon(
                     imageVector = Icons.Default.TrendingUp,
                     contentDescription = "Trending up",
-                    modifier = Modifier.padding(8.dp)
+                    modifier = Modifier
+                        .padding(8.dp)
                 )
             }
         },
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
-                if (searchOpened) {
-                    SearchView(
-                        searchValue,
-                        onSearchValueChange,
-                        onSearchTriggered,
-                        Modifier.weight(1f)
-                    )
-                } else {
+            Surface(Modifier.fillMaxWidth()) {
+                SearchView(
+                    searchValue,
+                    onSearchValueChange,
+                    onSearchTriggered,
+                    Modifier
+                        .fillMaxWidth()
+                        .offset(x = offset)
+                        .alpha(abs(1 - alpha))
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(alpha)
+                ) {
                     Text(text = "StockSample", modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
@@ -119,11 +140,7 @@ fun MainTopBar(
             }
         },
         elevation = 8.dp,
-        backgroundColor = if (searchOpened) {
-            MaterialTheme.colors.background
-        } else {
-            MaterialTheme.colors.primary
-        }
+        backgroundColor = MaterialTheme.colors.background
     )
 }
 
@@ -142,7 +159,7 @@ fun SearchView(
         onValueChange = onSearchValueChange,
         placeholder = { Text(text = "Search symbol") },
         singleLine = true,
-        shape = MaterialTheme.shapes.small,
+        shape = MaterialTheme.shapes.large,
         colors = TextFieldDefaults.textFieldColors(
             focusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
