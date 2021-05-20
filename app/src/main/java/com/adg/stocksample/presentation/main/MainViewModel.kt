@@ -55,13 +55,6 @@ class MainViewModel @Inject constructor(
             }
         }
     }
-
-
-    override fun onCellClicked(symbol: String) {
-        viewModelScope.launch {
-            sideEffectsChannel.send(MainSideEffects.NavigateToDetail(symbol))
-        }
-    }
 }
 
 data class MainState(

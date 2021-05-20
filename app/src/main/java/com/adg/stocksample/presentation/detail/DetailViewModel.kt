@@ -6,15 +6,20 @@ import com.adg.stocksample.data.models.SymbolMonthlyInfoResponse
 import com.adg.stocksample.utils.Request
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class DetailViewModel @AssistedInject constructor(
-    @Assisted private val symbol: String,
-    private val stockDataSource: StockDataSource
+@HiltViewModel
+class DetailViewModel @Inject constructor(
+    private val stockDataSource: StockDataSource,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel(), DetailScreenActions {
-    private val _state: MutableStateFlow<DetailState> = MutableStateFlow(DetailState(symbol))
+
+    private val _state: MutableStateFlow<DetailState> =
+        MutableStateFlow(DetailState(savedStateHandle.get<String>(SYMBOL)!!))
     val state: StateFlow<DetailState> = _state
 
     init {
@@ -31,21 +36,8 @@ class DetailViewModel @AssistedInject constructor(
         }
     }
 
-    @dagger.assisted.AssistedFactory
-    interface AssistedFactory {
-        fun create(symbol: String): DetailViewModel
-    }
-
     companion object {
-        fun provideFactory(
-            assistedFactory: AssistedFactory,
-            symbol: String
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-                return assistedFactory.create(symbol) as T
-            }
-        }
+        const val SYMBOL = "symbol"
     }
 
 }

@@ -44,11 +44,14 @@ interface MainScreenActions {
     fun hideSearch()
     fun onSearchValueChange(content: String)
     fun onSearchTriggered()
-    fun onCellClicked(symbol: String)
 }
 
 @Composable
-fun MainScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenActions) {
+fun MainScreen(
+    state: StateFlow<MainState>,
+    mainScreenActions: MainScreenActions,
+    navigateToDetail: (String) -> Unit
+) {
     val searchOpen by state.collectPropertyAsState(MainState::searchOpen)
     val searchValue by state.collectPropertyAsState(MainState::searchValue)
     val searchResults by state.collectPropertyAsState(MainState::searchResults)
@@ -62,7 +65,7 @@ fun MainScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenActions
             onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
-        MainContent(searchResults) { symbol -> mainScreenActions.onCellClicked(symbol) }
+        MainContent(searchResults, navigateToDetail)
     }
 }
 
@@ -186,7 +189,10 @@ fun SearchView(
 }
 
 @Composable
-fun MainContent(searchResults: Request<List<SearchEntryResponse>>, onCellClicked: (String) -> Unit) {
+fun MainContent(
+    searchResults: Request<List<SearchEntryResponse>>,
+    onCellClicked: (String) -> Unit
+) {
     when (val results = searchResults) {
         Request.Uninitialized -> MainScreenEmpty()
         is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
