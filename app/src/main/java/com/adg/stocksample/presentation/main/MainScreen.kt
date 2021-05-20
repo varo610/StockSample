@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -19,11 +20,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.animatedVectorResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -34,8 +35,8 @@ import com.adg.stocksample.presentation.ui.StockSampleError
 import com.adg.stocksample.presentation.ui.StockSampleLoading
 import com.adg.stocksample.presentation.ui.theme.StockSampleTheme
 import com.adg.stocksample.utils.Request
+import com.adg.stocksample.utils.collectPropertyAsState
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlin.math.abs
 
 interface MainScreenActions {
@@ -47,14 +48,10 @@ interface MainScreenActions {
 }
 
 @Composable
-fun MainScreen(viewModel: MainViewModel) {
-    MainStateScreen(state = viewModel.state, mainScreenActions = viewModel)
-}
-
-@Composable
-fun MainStateScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenActions) {
-    val searchOpen by state.map { it.searchOpen }.collectAsState(state.value.searchOpen)
-    val searchValue by state.map { it.searchValue }.collectAsState(state.value.searchValue)
+fun MainScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenActions) {
+    val searchOpen by state.collectPropertyAsState(MainState::searchOpen)
+    val searchValue by state.collectPropertyAsState(MainState::searchValue)
+    val searchResults by state.collectPropertyAsState(MainState::searchResults)
     Scaffold(topBar = {
         MainTopBar(
             searchOpened = searchOpen,
@@ -65,7 +62,7 @@ fun MainStateScreen(state: StateFlow<MainState>, mainScreenActions: MainScreenAc
             onSearchTriggered = { mainScreenActions.onSearchTriggered() }
         )
     }) {
-        MainContent(state) { symbol -> mainScreenActions.onCellClicked(symbol) }
+        MainContent(searchResults) { symbol -> mainScreenActions.onCellClicked(symbol) }
     }
 }
 
@@ -98,6 +95,7 @@ fun MainTopBar(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     modifier = Modifier
+                        .clip(CircleShape)
                         .clickable(onClick = hideSearch)
                         .padding(16.dp)
                 )
@@ -133,6 +131,7 @@ fun MainTopBar(
                         imageVector = Icons.Default.Search,
                         contentDescription = "Search",
                         modifier = Modifier
+                            .clip(CircleShape)
                             .clickable(onClick = openSearch)
                             .padding(16.dp)
                     )
@@ -187,8 +186,7 @@ fun SearchView(
 }
 
 @Composable
-fun MainContent(state: StateFlow<MainState>, onCellClicked: (String) -> Unit) {
-    val searchResults by state.map { it.searchResults }.collectAsState(state.value.searchResults)
+fun MainContent(searchResults: Request<List<SearchEntryResponse>>, onCellClicked: (String) -> Unit) {
     when (val results = searchResults) {
         Request.Uninitialized -> MainScreenEmpty()
         is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")

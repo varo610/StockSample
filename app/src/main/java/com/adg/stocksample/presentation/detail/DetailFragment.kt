@@ -37,7 +37,7 @@ class DetailFragment: Fragment() {
         )
         setContent {
             StockSampleTheme {
-                DetailScreen(viewModel = viewModel)
+                DetailScreen(viewModel.state, viewModel)
             }
         }
     }

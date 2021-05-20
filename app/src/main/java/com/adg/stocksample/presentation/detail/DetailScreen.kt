@@ -18,24 +18,22 @@ import com.adg.stocksample.data.models.SymbolMonthlyInfoResponse
 import com.adg.stocksample.presentation.ui.StockSampleError
 import com.adg.stocksample.presentation.ui.StockSampleLoading
 import com.adg.stocksample.utils.Request
+import com.adg.stocksample.utils.collectPropertyAsState
+import kotlinx.coroutines.flow.StateFlow
 
 interface DetailScreenActions {
 }
 
 @Composable
-fun DetailScreen(viewModel: DetailViewModel) {
-    val state by viewModel.state.collectAsState()
-    DetailStateScreen(state = state, detailScreenActions = viewModel)
-}
-
-@Composable
-fun DetailStateScreen(state: DetailState, detailScreenActions: DetailScreenActions) {
-    Scaffold(topBar = { DetailTopBar(symbol = state.symbol) }) {
-        when (val results = state.results) {
+fun DetailScreen(state: StateFlow<DetailState>, detailScreenActions: DetailScreenActions) {
+    val symbol by state.collectPropertyAsState(DetailState::symbol)
+    val results by state.collectPropertyAsState(DetailState::results)
+    Scaffold(topBar = { DetailTopBar(symbol = symbol) }) {
+        when (val request = results) {
             Request.Uninitialized,
             Request.Loading -> StockSampleLoading()
-            is Request.Error -> StockSampleError(errorText = results.throwable.message ?: "Error")
-            is Request.Success -> DetailScreenSuccess(results.result)
+            is Request.Error -> StockSampleError(errorText = request.throwable.message ?: "Error")
+            is Request.Success -> DetailScreenSuccess(request.result)
         }
     }
 }

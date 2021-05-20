@@ -36,9 +36,7 @@ class MainFragment : Fragment() {
             viewModel.onSearchTriggered()
         }
         setContent {
-            StockSampleTheme {
-                MainScreen(viewModel = viewModel)
-            }
+            StockSampleTheme { MainScreen(viewModel.state, viewModel) }
         }
     }
 
